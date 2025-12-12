@@ -1,13 +1,14 @@
-import { HttpError } from 'http-errors';
+import { isCelebrateError } from 'celebrate';
 
-export function errorHandler(err, req, res, next) {
-  let status = 500;
-  let message = 'Internal Server Error';
+export const errorHandler = (err, req, res, next) => {
+  console.error(err.stack);
 
-  if (err instanceof HttpError) {
-    status = err.status;
-    message = err.message;
+  if (isCelebrateError(err)) {
+    const validationError = Array.from(err.details.values())[0];
+    return res.status(400).json({ message: validationError.message });
   }
 
-  res.status(status).json({ message });
-}
+  res
+    .status(err.status || 500)
+    .json({ message: err.message || 'Internal Server Error' });
+};
