@@ -1,34 +1,26 @@
 import nodemailer from 'nodemailer';
 import createHttpError from 'http-errors';
-import dotenv from 'dotenv';
 
-dotenv.config();
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: process.env.SMTP_PORT === '465', 
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASSWORD,
+  },
+});
 
-if (!process.env.SMTP_FROM) {
-  console.warn(
-    '⚠ WARNING: SMTP_FROM is not defined. Emails may fail without a valid sender address.',
-  );
-}
 
-export const sendEmail = async (options = {}) => {
+export const sendEmail = async (options) => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
-      },
-    });
-
-    const mailOptions = {
+    const result = await transporter.sendMail({
       from: process.env.SMTP_FROM,
       ...options,
-    };
-
-    return await transporter.sendMail(mailOptions);
-  } catch (err) {
+    });
+    
+    return result;
+  } catch (error) {
     throw createHttpError(
       500,
       'Failed to send the email, please try again later.',
